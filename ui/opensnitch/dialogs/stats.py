@@ -237,8 +237,9 @@ class StatsDialog(QtWidgets.QDialog, uic.loadUiType(DIALOG_UI_PATH)[0]):
                     "description as Description, " \
                     "created as Created",
             "header_labels": [],
-            "last_order_by": "2",
-            "last_order_to": 0,
+            # default: newest rules first (col 8 = Created), see #1073
+            "last_order_by": "8",
+            "last_order_to": 1,
             "tracking_column": COL_R_NAME
         },
         TAB_HOSTS: {
@@ -670,8 +671,9 @@ class StatsDialog(QtWidgets.QDialog, uic.loadUiType(DIALOG_UI_PATH)[0]):
                 model=GenericTableModel("rules", self.TABLES[self.TAB_RULES]['header_labels']),
                 verticalScrollBar=self.rulesScrollBar,
                 delegate=self.TABLES[self.TAB_RULES]['delegate'],
-                order_by="2",
-                sort_direction=self.SORT_ORDER[0],
+                # default: newest rules first (col 8 = Created), see #1073
+                order_by="8",
+                sort_direction=self.SORT_ORDER[1],
                 tracking_column=self.TABLES[self.TAB_RULES]['tracking_column'])
         self.TABLES[self.TAB_FIREWALL]['view'] = self._setup_table(QtWidgets.QTableView, self.fwTable, "firewall",
                 model=FirewallTableModel("firewall"),
