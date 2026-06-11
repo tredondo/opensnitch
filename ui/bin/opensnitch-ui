@@ -49,6 +49,14 @@ import signal
 import argparse
 import logging
 
+# Distros like Ubuntu replace sys.excepthook with apport's hook, which
+# identifies the crashing package via apt_pkg, which fork()s. A fork() in a
+# process with active gRPC threads deadlocks in gRPC's pthread_atfork prepare
+# handler ("Waiting for thread pool to idle before forking"), permanently
+# wedging the Qt main thread. Restore the stock hook so uncaught exceptions
+# print a traceback instead of hanging the GUI.
+sys.excepthook = sys.__excepthook__
+
 from concurrent import futures
 
 import grpc
