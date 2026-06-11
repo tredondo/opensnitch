@@ -189,8 +189,17 @@ class PromptDialog(QtWidgets.QDialog, uic.loadUiType(DIALOG_UI_PATH)[0]):
 
     def move_popup(self):
         popup_pos = self._cfg.getInt(self._cfg.DEFAULT_POPUP_POSITION)
-        point = self.screen().availableGeometry()
-        point = self.screen().virtualSiblingAt(QtGui.QCursor.pos()).availableGeometry()
+        # self.screen() can be None on Wayland before the dialog is shown, and
+        # virtualSiblingAt() returns None when the cursor is outside any
+        # sibling screen. The unguarded chain raised AttributeError on every
+        # popup render. Fall back: cursor screen -> dialog screen -> primary.
+        screen = self.screen() or QtWidgets.QApplication.primaryScreen()
+        if screen is None:
+            return
+        sibling = screen.virtualSiblingAt(QtGui.QCursor.pos())
+        if sibling is not None:
+            screen = sibling
+        point = screen.availableGeometry()
         if popup_pos == self._cfg.POPUP_TOP_RIGHT:
             self.move(point.topRight())
         elif popup_pos == self._cfg.POPUP_TOP_LEFT:
@@ -217,9 +226,13 @@ class PromptDialog(QtWidgets.QDialog, uic.loadUiType(DIALOG_UI_PATH)[0]):
         self.destIPLabel.setVisible(not state)
         self.checkDstPort.setVisible(state == True and (self._con != None and self._con.dst_port != 0))
         self.checkUserID.setVisible(state)
-        self.checkSum.setVisible(self._con.process_checksums[Config.OPERAND_PROCESS_HASH_MD5] != "" and state)
-        self.checksumLabel_2.setVisible(self._con.process_checksums[Config.OPERAND_PROCESS_HASH_MD5] != "" and state)
-        self.checksumLabel.setVisible(self._con.process_checksums[Config.OPERAND_PROCESS_HASH_MD5] != "" and state)
+        # self._con can be None when this slot fires via checkAdvanced.toggle()
+        # during _render_connection; guard it like checkDstPort above.
+        has_checksum = (self._con is not None and
+                        self._con.process_checksums[Config.OPERAND_PROCESS_HASH_MD5] != "")
+        self.checkSum.setVisible(has_checksum and state)
+        self.checksumLabel_2.setVisible(has_checksum and state)
+        self.checksumLabel.setVisible(has_checksum and state)
         self.stackedWidget.setCurrentIndex(_constants.PAGE_MAIN)
 
         self._ischeckAdvanceded = state
